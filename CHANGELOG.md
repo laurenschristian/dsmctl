@@ -5,6 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1]
+
+### Fixed
+- Homebrew cask now strips the macOS quarantine attribute on install, so the binary runs without a Gatekeeper block.
+- Correct cask description (was a leftover from another tool).
+
 ## [0.1.0]
 
 ### Added

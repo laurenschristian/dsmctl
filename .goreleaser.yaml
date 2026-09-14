@@ -42,7 +42,7 @@ homebrew_casks:
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: "https://github.com/laurenschristian/dsmctl"
-    description: "CLI and MCP server for eero mesh networks"
+    description: "CLI and MCP server for Synology DSM"
     license: "MIT"
     manpages:
       - "man/dsmctl.1"
@@ -50,3 +50,11 @@ homebrew_casks:
       bash: "completions/dsmctl.bash"
       zsh: "completions/_dsmctl"
       fish: "completions/dsmctl.fish"
+    hooks:
+      post:
+        # Strip the quarantine xattr so the unsigned binary runs without a
+        # Gatekeeper prompt (goreleaser no longer emits this by default).
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/dsmctl"]
+          end
