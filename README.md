@@ -1,5 +1,7 @@
 # dsmctl
 
+<img src="assets/icon.png" alt="dsmctl icon" width="96" align="right">
+
 [![CI](https://github.com/laurenschristian/dsmctl/actions/workflows/ci.yml/badge.svg)](https://github.com/laurenschristian/dsmctl/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
