@@ -34,8 +34,10 @@ func Root() *cobra.Command {
 			if cfg, err = config.Load(); err != nil {
 				return err
 			}
-			// init writes the config and needs no URL or client yet.
-			if cmd.Name() == "init" {
+			// These commands need no URL or client: init writes config; the
+			// rest are cobra built-ins used before setup (completion has
+			// per-shell subcommands, so check the parent too).
+			if noSetup(cmd.Name()) || (cmd.Parent() != nil && noSetup(cmd.Parent().Name())) {
 				return nil
 			}
 			if cfg.URL == "" {
@@ -115,6 +117,15 @@ func authed(ctx context.Context, fn func() error) error {
 		}
 	}
 	return err
+}
+
+// noSetup reports whether a command runs without a configured URL or client.
+func noSetup(name string) bool {
+	switch name {
+	case "init", "completion", "help", "__complete", "__completeNoDesc":
+		return true
+	}
+	return false
 }
 
 func doctorCmd() *cobra.Command {
