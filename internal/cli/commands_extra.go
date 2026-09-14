@@ -54,10 +54,68 @@ func networkCmd() *cobra.Command {
 }
 
 func upsCmd() *cobra.Command {
-	return rawListCmd("ups", "UPS status (model, charge, load, runtime)", func(cmd *cobra.Command) (any, error) {
-		b, err := client.UPS(cmd.Context())
-		return rawResult{b}, err
-	})
+	return &cobra.Command{
+		Use:   "ups",
+		Short: "UPS status: model, state, charge, runtime",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if flagJSON {
+				var raw []byte
+				if err := authed(cmd.Context(), func() (err error) {
+					raw, err = client.UPS(cmd.Context())
+					return
+				}); err != nil {
+					return err
+				}
+				return emitRaw(raw)
+			}
+			var u *dsm.UPSInfo
+			if err := authed(cmd.Context(), func() (err error) {
+				u, err = client.UPSInfo(cmd.Context())
+				return
+			}); err != nil {
+				return err
+			}
+			if !u.Enable {
+				fmt.Println("no UPS configured")
+				return nil
+			}
+			fmt.Printf("model     %s\n", trimField(u.Manufacture)+" "+trimField(u.Model))
+			fmt.Printf("state     %s\n", upsState(u.Status))
+			fmt.Printf("battery   %s%%\n", u.Charge)
+			fmt.Printf("runtime   %s\n", upsRuntime(u.Runtime))
+			fmt.Printf("link      %s\n", u.Mode)
+			return nil
+		},
+	}
+}
+
+// trimField drops the trailing newline DSM appends to some string fields.
+func trimField(s string) string { return strings.TrimSpace(s) }
+
+// upsState turns "usb_ups_status_online" into "online".
+func upsState(s string) string {
+	s = strings.TrimPrefix(s, "usb_ups_status_")
+	if s == "" {
+		return "unknown"
+	}
+	return s
+}
+
+// upsRuntime formats a seconds count as "1h 4m" or "45m".
+func upsRuntime(n json.Number) string {
+	sec, err := n.Int64()
+	if err != nil {
+		f, _ := n.Float64()
+		sec = int64(f)
+	}
+	if sec <= 0 {
+		return "n/a"
+	}
+	h, m := sec/3600, (sec%3600)/60
+	if h > 0 {
+		return fmt.Sprintf("%dh %dm", h, m)
+	}
+	return fmt.Sprintf("%dm", m)
 }
 
 func processesCmd() *cobra.Command {

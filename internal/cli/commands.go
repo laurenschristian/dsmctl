@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -166,37 +167,58 @@ func statusCmd() *cobra.Command {
 }
 
 func healthCmd() *cobra.Command {
-	return &cobra.Command{
+	var watch int
+	cmd := &cobra.Command{
 		Use:   "health",
 		Short: "CPU and memory load, plus volume and disk SMART summary",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			var u *dsm.Utilization
-			var st *dsm.StorageInfo
-			if err := authed(cmd.Context(), func() error {
-				var err error
-				if u, err = client.Utilization(cmd.Context()); err != nil {
+			if watch <= 0 || flagJSON {
+				return renderHealth(cmd)
+			}
+			for {
+				fmt.Print("\033[H\033[2J") // clear screen, cursor home
+				fmt.Printf("%s  (every %ds, Ctrl-C to stop)\n\n", time.Now().Format("15:04:05"), watch)
+				if err := renderHealth(cmd); err != nil {
 					return err
 				}
-				st, err = client.Storage(cmd.Context())
-				return err
-			}); err != nil {
-				return err
+				select {
+				case <-cmd.Context().Done():
+					return nil
+				case <-time.After(time.Duration(watch) * time.Second):
+				}
 			}
-			if flagJSON {
-				return emit(map[string]any{"utilization": u, "storage": st})
-			}
-			fmt.Printf("cpu load   user %s%% system %s%%\n", u.CPU.UserLoad, u.CPU.SystemLoad)
-			fmt.Printf("mem usage  %s%% of %s\n", u.Memory.RealUsage, humanBytesKB(u.Memory.TotalReal))
-			for _, v := range st.Volumes {
-				used, total := numInt(v.Size.Used), numInt(v.Size.Total)
-				fmt.Printf("volume %-9s %-7s %s / %s (%s)\n", v.ID, v.Status, humanI(used), humanI(total), pct(used, total))
-			}
-			for _, d := range st.Disks {
-				fmt.Printf("disk %-9s %-22s %-7s SMART %-8s %d C\n", d.ID, d.Model, d.Status, d.SMARTStatus, d.Temp)
-			}
-			return nil
 		},
 	}
+	cmd.Flags().IntVar(&watch, "watch", 0, "refresh every N seconds until Ctrl-C")
+	return cmd
+}
+
+func renderHealth(cmd *cobra.Command) error {
+	var u *dsm.Utilization
+	var st *dsm.StorageInfo
+	if err := authed(cmd.Context(), func() error {
+		var err error
+		if u, err = client.Utilization(cmd.Context()); err != nil {
+			return err
+		}
+		st, err = client.Storage(cmd.Context())
+		return err
+	}); err != nil {
+		return err
+	}
+	if flagJSON {
+		return emit(map[string]any{"utilization": u, "storage": st})
+	}
+	fmt.Printf("cpu load   user %s%% system %s%%\n", u.CPU.UserLoad, u.CPU.SystemLoad)
+	fmt.Printf("mem usage  %s%% of %s\n", u.Memory.RealUsage, humanBytesKB(u.Memory.TotalReal))
+	for _, v := range st.Volumes {
+		used, total := numInt(v.Size.Used), numInt(v.Size.Total)
+		fmt.Printf("volume %-9s %-7s %s / %s (%s)\n", v.ID, v.Status, humanI(used), humanI(total), pct(used, total))
+	}
+	for _, d := range st.Disks {
+		fmt.Printf("disk %-9s %-22s %-7s SMART %-8s %d C\n", d.ID, d.Model, d.Status, d.SMARTStatus, d.Temp)
+	}
+	return nil
 }
 
 func storageCmd() *cobra.Command {

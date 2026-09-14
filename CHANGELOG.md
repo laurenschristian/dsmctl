@@ -5,6 +5,14 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.3]
+
+### Added
+- `health --watch <seconds>` refreshes on an interval until Ctrl-C.
+
+### Changed
+- `ups` prints a human-readable summary (state, battery %, runtime as `1h 4m`); `--json` still returns the raw payload.
+
 ## [0.1.2]
 
 ### Added

@@ -8,11 +8,12 @@ One static binary: a CLI and an [MCP](https://modelcontextprotocol.io) server fo
 ```console
 dsmctl status                 # model, DSM version, serial, CPU, RAM, uptime, temperature
 dsmctl health                 # CPU and memory load, volumes and disk SMART (human-readable)
+dsmctl health --watch 5       # refresh every 5s until Ctrl-C
 dsmctl storage                # volumes and physical disks with SMART status
 dsmctl update                 # is a DSM update available
 dsmctl security               # Security Advisor scan summary
 dsmctl network                # interfaces, DNS, gateway
-dsmctl ups                    # UPS model, charge, load, runtime
+dsmctl ups                    # UPS model, state, charge, runtime (human-readable)
 dsmctl processes              # running processes by CPU and memory (alias: top)
 dsmctl packages               # installed packages and versions
 dsmctl packages start <id> --yes      # start | stop an installed package

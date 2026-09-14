@@ -3,10 +3,12 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -411,5 +413,67 @@ func TestDockerActionMethods(t *testing.T) {
 	}
 	if err := c.PackageAction(context.Background(), "start", "Docker"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestUPSHumanized(t *testing.T) {
+	fakeEnv(t)
+	out, err := run(t, "ups")
+	if err != nil || !strings.Contains(out, "online") || !strings.Contains(out, "1h 4m") {
+		t.Fatalf("ups humanized: %v\n%s", err, out)
+	}
+	out, err = run(t, "ups", "--json")
+	if err != nil || !strings.Contains(out, "usb_ups_status_online") {
+		t.Fatalf("ups json: %v\n%s", err, out)
+	}
+}
+
+func TestUPSHelpers(t *testing.T) {
+	if upsState("usb_ups_status_online") != "online" {
+		t.Fatal("upsState")
+	}
+	if upsState("") != "unknown" {
+		t.Fatal("upsState empty")
+	}
+	if upsRuntime(jsonNum("3894")) != "1h 4m" || upsRuntime(jsonNum("120")) != "2m" || upsRuntime(jsonNum("0")) != "n/a" {
+		t.Fatal("upsRuntime")
+	}
+	if trimField("x\n") != "x" {
+		t.Fatal("trimField")
+	}
+}
+
+func TestHealthWatchOneShot(t *testing.T) {
+	fakeEnv(t)
+	// renderHealth is the single-pass body used by --watch; exercise it directly
+	// through the normal (non-watch) path.
+	out, err := run(t, "health")
+	if err != nil || !strings.Contains(out, "cpu load") {
+		t.Fatalf("health render: %v\n%s", err, out)
+	}
+}
+
+func jsonNum(v string) json.Number { return json.Number(v) }
+
+func TestHealthWatchLoop(t *testing.T) {
+	fakeEnv(t)
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	flagJSON = false
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	root := Root()
+	root.SetArgs([]string{"health", "--watch", "1"})
+	err := root.ExecuteContext(ctx)
+	_ = w.Close()
+	os.Stdout = old
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	if err != nil {
+		t.Fatalf("watch loop: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Ctrl-C to stop") {
+		t.Fatalf("watch header missing:\n%s", buf.String())
 	}
 }

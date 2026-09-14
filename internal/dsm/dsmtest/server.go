@@ -114,7 +114,7 @@ func (s *Server) entry(w http.ResponseWriter, r *http.Request) {
 		ok(w, map[string]any{"dns": []any{"1.1.1.1"}, "gateway": "10.0.4.1",
 			"interfaces": []any{map[string]any{"id": "ovs_eth0", "mac": "90-09-D0-62-EE-35"}}})
 	case "SYNO.Core.ExternalDevice.UPS":
-		ok(w, map[string]any{"enable": true, "charge": 99, "model": "Back-UPS XS 1500M", "mode": "USB"})
+		ok(w, map[string]any{"enable": true, "charge": 99, "runtime": 3894, "status": "usb_ups_status_online", "model": "Back-UPS XS 1500M", "manufacture": "American Power Conversion", "mode": "USB"})
 	case "SYNO.Core.System.Process":
 		ok(w, map[string]any{"process": []any{map[string]any{"command": "sscamerad", "cpu": 47, "mem": 71896, "pid": 14114}}})
 	case "SYNO.Core.Group":

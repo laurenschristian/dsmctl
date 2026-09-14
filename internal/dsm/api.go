@@ -194,3 +194,22 @@ func (c *Client) APIs(ctx context.Context) (json.RawMessage, error) {
 	p.Set("query", "all")
 	return c.Raw(ctx, "SYNO.API.Info", "query", 1, p)
 }
+
+// UPSInfo is a subset of SYNO.Core.ExternalDevice.UPS get.
+type UPSInfo struct {
+	Enable      bool        `json:"enable"`
+	Status      string      `json:"status"`
+	Charge      json.Number `json:"charge"`
+	Runtime     json.Number `json:"runtime"`
+	Model       string      `json:"model"`
+	Manufacture string      `json:"manufacture"`
+	Mode        string      `json:"mode"`
+}
+
+func (c *Client) UPSInfo(ctx context.Context) (*UPSInfo, error) {
+	var out UPSInfo
+	if err := c.Call(ctx, "SYNO.Core.ExternalDevice.UPS", "get", 1, nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
