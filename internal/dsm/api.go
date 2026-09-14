@@ -146,3 +146,51 @@ func (c *Client) Reboot(ctx context.Context) error {
 func (c *Client) Shutdown(ctx context.Context) error {
 	return c.Call(ctx, "SYNO.Core.System", "shutdown", 2, nil, nil)
 }
+
+// UpdateInfo is the SYNO.Core.Upgrade.Server check payload.
+type UpdateInfo struct {
+	Available bool   `json:"available"`
+	Version   string `json:"version"`
+	Reboot    string `json:"reboot"`
+	Restart   string `json:"restart"`
+	Type      string `json:"type"`
+}
+
+func (c *Client) UpdateCheck(ctx context.Context) (*UpdateInfo, error) {
+	var out UpdateInfo
+	if err := c.Call(ctx, "SYNO.Core.Upgrade.Server", "check", 1, nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *Client) Security(ctx context.Context) (json.RawMessage, error) {
+	return c.Raw(ctx, "SYNO.Core.SecurityScan.Status", "system_get", 1, nil)
+}
+
+func (c *Client) Network(ctx context.Context) (json.RawMessage, error) {
+	return c.Raw(ctx, "SYNO.DSM.Network", "list", 2, nil)
+}
+
+func (c *Client) UPS(ctx context.Context) (json.RawMessage, error) {
+	return c.Raw(ctx, "SYNO.Core.ExternalDevice.UPS", "get", 1, nil)
+}
+
+func (c *Client) Processes(ctx context.Context) (json.RawMessage, error) {
+	return c.Raw(ctx, "SYNO.Core.System.Process", "list", 1, nil)
+}
+
+func (c *Client) Groups(ctx context.Context) (json.RawMessage, error) {
+	return c.Raw(ctx, "SYNO.Core.Group", "list", 1, nil)
+}
+
+func (c *Client) BackupTasks(ctx context.Context) (json.RawMessage, error) {
+	return c.Raw(ctx, "SYNO.Backup.Task", "list", 1, nil)
+}
+
+// APIs lists every WebAPI the host exposes (name to version/path). Unauthenticated.
+func (c *Client) APIs(ctx context.Context) (json.RawMessage, error) {
+	p := url.Values{}
+	p.Set("query", "all")
+	return c.Raw(ctx, "SYNO.API.Info", "query", 1, p)
+}

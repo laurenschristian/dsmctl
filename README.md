@@ -7,14 +7,22 @@ One static binary: a CLI and an [MCP](https://modelcontextprotocol.io) server fo
 
 ```console
 dsmctl status                 # model, DSM version, serial, CPU, RAM, uptime, temperature
-dsmctl health                 # CPU and memory load, volumes, disk SMART
+dsmctl health                 # CPU and memory load, volumes and disk SMART (human-readable)
 dsmctl storage                # volumes and physical disks with SMART status
+dsmctl update                 # is a DSM update available
+dsmctl security               # Security Advisor scan summary
+dsmctl network                # interfaces, DNS, gateway
+dsmctl ups                    # UPS model, charge, load, runtime
+dsmctl processes              # running processes by CPU and memory (alias: top)
 dsmctl packages               # installed packages and versions
 dsmctl docker                 # containers and their state (alias: ps)
 dsmctl tasks                  # scheduled tasks
+dsmctl backup                 # Hyper Backup tasks
 dsmctl shares                 # shared folders
 dsmctl users                  # local users
+dsmctl groups                 # local groups
 dsmctl connections            # who is connected (alias: who)
+dsmctl apis [filter]          # list every DSM WebAPI (for use with raw)
 dsmctl reboot --yes           # restart the NAS
 dsmctl shutdown --yes         # power off the NAS
 dsmctl raw SYNO.Core.System info --version 3   # any DSM API
@@ -52,6 +60,7 @@ DSM sessions are token-based. `dsmctl login` authenticates once and caches the s
 ```console
 dsmctl login                  # uses the configured account + password_cmd
 dsmctl login --otp 123456     # 2-factor accounts: pass the current code
+dsmctl login 123456           # or as a positional; login also prompts if a code is needed
 dsmctl logout                 # invalidate and clear the cached session
 ```
 
@@ -59,7 +68,7 @@ For a 2-factor account, run `dsmctl login --otp <code>` once; the cached session
 
 ## MCP
 
-`dsmctl mcp` exposes the read operations plus `dsm_raw` as tools: `dsm_status`, `dsm_health`, `dsm_storage`, `dsm_packages`, `dsm_docker`, `dsm_tasks`, `dsm_shares`, `dsm_users`, `dsm_connections`, `dsm_raw`. Reboot and shutdown are intentionally CLI-only.
+`dsmctl mcp` exposes the read operations plus `dsm_raw` as tools: `dsm_status`, `dsm_health`, `dsm_storage`, `dsm_update`, `dsm_security`, `dsm_network`, `dsm_ups`, `dsm_processes`, `dsm_packages`, `dsm_docker`, `dsm_tasks`, `dsm_backup`, `dsm_shares`, `dsm_users`, `dsm_groups`, `dsm_connections`, `dsm_apis`, `dsm_raw`. Reboot and shutdown are intentionally CLI-only.
 
 ```console
 claude mcp add dsm -- dsmctl mcp
@@ -69,7 +78,7 @@ Any client that speaks stdio MCP (Cursor, Claude Desktop, Zed) works the same: c
 
 ## Coverage
 
-Status, health, storage and SMART, packages, Docker containers, scheduled tasks, shares, users, active connections, reboot and shutdown. Anything else is `dsmctl raw <api> <method> --version N -p key=value`.
+Status, health, storage and SMART, DSM update check, Security Advisor, network, UPS, processes, packages, Docker containers, scheduled and Hyper Backup tasks, shares, users, groups, active connections, and full API discovery (`dsmctl apis`). Reboot and shutdown too. Anything else is `dsmctl raw <api> <method> --version N -p key=value`.
 
 ## Development
 

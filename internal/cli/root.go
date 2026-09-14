@@ -56,9 +56,11 @@ func Root() *cobra.Command {
 	root.PersistentFlags().BoolVar(&flagJSON, "json", false, "print raw JSON")
 	root.AddCommand(
 		initCmd(), loginCmd(), logoutCmd(), doctorCmd(),
-		statusCmd(), healthCmd(), storageCmd(),
-		packagesCmd(), dockerCmd(), tasksCmd(), sharesCmd(), usersCmd(), connectionsCmd(),
-		rebootCmd(), shutdownCmd(), rawCmd(), mcpCmd(),
+		statusCmd(), healthCmd(), storageCmd(), updateCmd(), securityCmd(),
+		networkCmd(), upsCmd(), processesCmd(),
+		packagesCmd(), dockerCmd(), tasksCmd(), backupCmd(),
+		sharesCmd(), usersCmd(), groupsCmd(), connectionsCmd(),
+		apisCmd(), rebootCmd(), shutdownCmd(), rawCmd(), mcpCmd(),
 	)
 	return root
 }

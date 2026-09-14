@@ -91,6 +91,12 @@ func TestReadCommands(t *testing.T) {
 		{"shares", "docker"},
 		{"users", "admin"},
 		{"connections", "SMB"},
+		{"security", "malware"},
+		{"network", "10.0.4.1"},
+		{"ups", "Back-UPS"},
+		{"processes", "sscamerad"},
+		{"groups", "administrators"},
+		{"backup", "task_list"},
 	} {
 		out, err := run(t, tc.cmd)
 		if err != nil || !strings.Contains(out, tc.want) {
@@ -156,8 +162,8 @@ func TestMCPTools(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tools.Tools) < 9 {
-		t.Fatalf("want >=9 tools, got %d", len(tools.Tools))
+	if len(tools.Tools) < 17 {
+		t.Fatalf("want >=17 tools, got %d", len(tools.Tools))
 	}
 	names := map[string]bool{}
 	for _, tl := range tools.Tools {
@@ -169,11 +175,18 @@ func TestMCPTools(t *testing.T) {
 		}
 	}
 
-	res, err := sess.CallTool(context.Background(), &mcp.CallToolParams{Name: "dsm_status"})
-	if err != nil || res.IsError {
-		t.Fatalf("dsm_status %v err=%v", err, res)
+	for _, name := range []string{
+		"dsm_status", "dsm_health", "dsm_storage", "dsm_update", "dsm_security",
+		"dsm_network", "dsm_ups", "dsm_processes", "dsm_packages", "dsm_docker",
+		"dsm_tasks", "dsm_backup", "dsm_shares", "dsm_users", "dsm_groups",
+		"dsm_connections", "dsm_apis",
+	} {
+		res, err := sess.CallTool(context.Background(), &mcp.CallToolParams{Name: name})
+		if err != nil || res.IsError {
+			t.Fatalf("%s: err=%v result=%v", name, err, res)
+		}
 	}
-	res, err = sess.CallTool(context.Background(), &mcp.CallToolParams{
+	res, err := sess.CallTool(context.Background(), &mcp.CallToolParams{
 		Name:      "dsm_raw",
 		Arguments: map[string]any{"api": "SYNO.Core.System", "method": "info", "version": 3},
 	})
@@ -291,5 +304,59 @@ func TestHelpers(t *testing.T) {
 	}
 	if !confirm(true, "x") {
 		t.Fatal("confirm --yes")
+	}
+}
+
+func TestUpdateAndApis(t *testing.T) {
+	fakeEnv(t)
+	out, err := run(t, "update")
+	if err != nil || !strings.Contains(out, "DSM 7.4.1-90080") {
+		t.Fatalf("update %v\n%s", err, out)
+	}
+	out, err = run(t, "apis")
+	if err != nil || !strings.Contains(out, "SYNO.Core.System") {
+		t.Fatalf("apis %v\n%s", err, out)
+	}
+	out, err = run(t, "apis", "auth")
+	if err != nil || !strings.Contains(out, "SYNO.API.Auth") {
+		t.Fatalf("apis filter %v\n%s", err, out)
+	}
+}
+
+func TestLoginPositionalOTP(t *testing.T) {
+	srv := dsmtest.New("me", "pw")
+	srv.OTP = "424242"
+	t.Cleanup(srv.Close)
+	t.Setenv("DSM_CONFIG", t.TempDir()+"/config.yaml")
+	t.Setenv("DSM_URL", srv.URL)
+	t.Setenv("DSM_USER", "me")
+	t.Setenv("DSM_PASS", "pw")
+	out, err := run(t, "login", "424242")
+	if err != nil || !strings.Contains(out, "session cached") {
+		t.Fatalf("positional otp login %v\n%s", err, out)
+	}
+}
+
+func TestNeedsOTP(t *testing.T) {
+	if !needsOTP(&dsm.APIError{API: "SYNO.API.Auth", Code: 403}) {
+		t.Fatal("403 should need otp")
+	}
+	if needsOTP(&dsm.APIError{API: "SYNO.API.Auth", Code: 400}) {
+		t.Fatal("400 is not an otp prompt")
+	}
+	if needsOTP(&dsm.APIError{API: "SYNO.Core.System", Code: 403}) {
+		t.Fatal("non-auth 403 is not an otp prompt")
+	}
+}
+
+func TestHumanBytes(t *testing.T) {
+	cases := map[int64]string{0: "0 B", 512: "512 B", 1024: "1.0 KiB", 1048576: "1.0 MiB"}
+	for n, want := range cases {
+		if got := humanI(n); got != want {
+			t.Fatalf("humanI(%d)=%q want %q", n, got, want)
+		}
+	}
+	if pct(68, 100) != "68%" || pct(1, 0) != "n/a" {
+		t.Fatal("pct")
 	}
 }

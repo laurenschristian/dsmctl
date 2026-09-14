@@ -62,6 +62,41 @@ func mcpServer() *mcp.Server {
 			return nil, out, err
 		})
 
+	add("dsm_update", "Check for an available DSM update.", func(ctx context.Context) (rawOut, error) {
+		u, err := client.UpdateCheck(ctx)
+		if err != nil {
+			return rawOut{}, err
+		}
+		return rawOut{Data: u}, nil
+	})
+	add("dsm_security", "Security Advisor scan summary.", func(ctx context.Context) (rawOut, error) {
+		b, err := client.Security(ctx)
+		return rawWrap(b), err
+	})
+	add("dsm_network", "Network interfaces, DNS, and gateway.", func(ctx context.Context) (rawOut, error) {
+		b, err := client.Network(ctx)
+		return rawWrap(b), err
+	})
+	add("dsm_ups", "UPS status: model, charge, load, runtime.", func(ctx context.Context) (rawOut, error) {
+		b, err := client.UPS(ctx)
+		return rawWrap(b), err
+	})
+	add("dsm_processes", "Running processes with CPU and memory.", func(ctx context.Context) (rawOut, error) {
+		b, err := client.Processes(ctx)
+		return rawWrap(b), err
+	})
+	add("dsm_groups", "Local groups.", func(ctx context.Context) (rawOut, error) {
+		b, err := client.Groups(ctx)
+		return rawWrap(b), err
+	})
+	add("dsm_backup", "Hyper Backup tasks and their state.", func(ctx context.Context) (rawOut, error) {
+		b, err := client.BackupTasks(ctx)
+		return rawWrap(b), err
+	})
+	add("dsm_apis", "List every DSM WebAPI the host exposes (for use with dsm_raw).", func(ctx context.Context) (rawOut, error) {
+		b, err := client.APIs(ctx)
+		return rawWrap(b), err
+	})
 	add("dsm_health", "CPU and memory load plus volume and disk SMART summary.", func(ctx context.Context) (rawOut, error) {
 		u, err := client.Utilization(ctx)
 		if err != nil {

@@ -2,6 +2,8 @@ package cli
 
 import (
 	"bufio"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -48,9 +50,10 @@ func initCmd() *cobra.Command {
 func loginCmd() *cobra.Command {
 	var account, password, otp string
 	cmd := &cobra.Command{
-		Use:   "login",
-		Short: "Authenticate and cache a session (use --otp for 2-factor accounts)",
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		Use:   "login [otp]",
+		Short: "Authenticate and cache a session (prompts for a 2-factor code if needed)",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if account == "" {
 				account = cfg.Username
 			}
@@ -65,7 +68,20 @@ func loginCmd() *cobra.Command {
 			if password == "" {
 				return fmt.Errorf("no password: pass --password or set password_cmd in config")
 			}
+			if otp == "" && len(args) == 1 {
+				otp = args[0] // allow `dsmctl login 123456`
+			}
+			otp = strings.TrimSpace(otp)
+
 			sess, err := client.Login(cmd.Context(), account, password, otp)
+			// On a 2-factor prompt (or a wrong code), ask for the code and retry.
+			for attempts := 0; err != nil && needsOTP(err) && attempts < 3; attempts++ {
+				code := promptLine("2-factor code: ")
+				if code == "" {
+					break
+				}
+				sess, err = client.Login(cmd.Context(), account, password, code)
+			}
 			if err != nil {
 				return err
 			}
@@ -78,8 +94,27 @@ func loginCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&account, "account", "", "DSM account (defaults to config username)")
 	cmd.Flags().StringVar(&password, "password", "", "DSM password (defaults to password_cmd)")
-	cmd.Flags().StringVar(&otp, "otp", "", "2-factor authentication code")
+	cmd.Flags().StringVar(&otp, "otp", "", "2-factor authentication code (also accepted as a positional arg)")
 	return cmd
+}
+
+// needsOTP reports whether a login error is the 2-factor challenge (403) or a
+// failed/expired code (404), i.e. a prompt-and-retry is worth it.
+func needsOTP(err error) bool {
+	var e *dsm.APIError
+	if !errorsAs(err, &e) || e.API != "SYNO.API.Auth" {
+		return false
+	}
+	return e.Code == 403 || e.Code == 404 || e.Code == 406
+}
+
+func promptLine(prompt string) string {
+	fmt.Fprint(os.Stderr, prompt)
+	sc := bufio.NewScanner(os.Stdin)
+	if !sc.Scan() {
+		return ""
+	}
+	return strings.TrimSpace(sc.Text())
 }
 
 func logoutCmd() *cobra.Command {
@@ -151,12 +186,13 @@ func healthCmd() *cobra.Command {
 				return emit(map[string]any{"utilization": u, "storage": st})
 			}
 			fmt.Printf("cpu load   user %s%% system %s%%\n", u.CPU.UserLoad, u.CPU.SystemLoad)
-			fmt.Printf("mem usage  %s%%\n", u.Memory.RealUsage)
+			fmt.Printf("mem usage  %s%% of %s\n", u.Memory.RealUsage, humanBytesKB(u.Memory.TotalReal))
 			for _, v := range st.Volumes {
-				fmt.Printf("volume %-8s %-8s used %s / %s\n", v.ID, v.Status, v.Size.Used, v.Size.Total)
+				used, total := numInt(v.Size.Used), numInt(v.Size.Total)
+				fmt.Printf("volume %-9s %-7s %s / %s (%s)\n", v.ID, v.Status, humanI(used), humanI(total), pct(used, total))
 			}
 			for _, d := range st.Disks {
-				fmt.Printf("disk %-8s %-20s %-6s SMART %-8s %d C\n", d.ID, d.Model, d.Status, d.SMARTStatus, d.Temp)
+				fmt.Printf("disk %-9s %-22s %-7s SMART %-8s %d C\n", d.ID, d.Model, d.Status, d.SMARTStatus, d.Temp)
 			}
 			return nil
 		},
@@ -311,3 +347,38 @@ func uptime(s *dsm.SystemInfo) string {
 }
 
 func sessionExpired(e *dsm.APIError) bool { return e.SessionExpired() }
+
+func errorsAs(err error, target any) bool { return errors.As(err, target) }
+
+// bytes reads a json.Number that may be an int or float string.
+func numInt(n json.Number) int64 {
+	if v, err := n.Int64(); err == nil {
+		return v
+	}
+	f, _ := n.Float64()
+	return int64(f)
+}
+
+// humanI formats a byte count with binary units (KiB..PiB).
+func humanI(n int64) string {
+	const unit = 1024
+	if n < unit {
+		return fmt.Sprintf("%d B", n)
+	}
+	div, exp := int64(unit), 0
+	for x := n / unit; x >= unit; x /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB", float64(n)/float64(div), "KMGTP"[exp])
+}
+
+// humanBytesKB formats a value already expressed in kibibytes (DSM memory fields).
+func humanBytesKB(n json.Number) string { return humanI(numInt(n) * 1024) }
+
+func pct(used, total int64) string {
+	if total <= 0 {
+		return "n/a"
+	}
+	return fmt.Sprintf("%.0f%%", float64(used)/float64(total)*100)
+}

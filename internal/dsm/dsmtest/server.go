@@ -55,7 +55,10 @@ func (s *Server) entry(w http.ResponseWriter, r *http.Request) {
 
 	switch api {
 	case "SYNO.API.Info":
-		ok(w, map[string]any{"SYNO.API.Auth": map[string]any{"minVersion": 1, "maxVersion": 7, "path": "entry.cgi"}})
+		ok(w, map[string]any{
+			"SYNO.API.Auth":    map[string]any{"minVersion": 1, "maxVersion": 7, "path": "entry.cgi"},
+			"SYNO.Core.System": map[string]any{"minVersion": 1, "maxVersion": 3, "path": "entry.cgi"},
+		})
 	case "SYNO.API.Auth":
 		s.auth(w, r, method)
 	case "SYNO.Core.System":
@@ -84,6 +87,21 @@ func (s *Server) entry(w http.ResponseWriter, r *http.Request) {
 		ok(w, map[string]any{"users": []any{map[string]any{"name": "admin", "email": "a@b.c"}}})
 	case "SYNO.Core.CurrentConnection":
 		ok(w, map[string]any{"items": []any{map[string]any{"who": "admin", "type": "SMB"}}})
+	case "SYNO.Core.Upgrade.Server":
+		ok(w, map[string]any{"available": true, "version": "DSM 7.4.1-90080", "reboot": "now", "restart": "none", "type": "dsm"})
+	case "SYNO.Core.SecurityScan.Status":
+		ok(w, map[string]any{"items": map[string]any{"malware": map[string]any{"failSeverity": "safe", "progress": 100}}})
+	case "SYNO.DSM.Network":
+		ok(w, map[string]any{"dns": []any{"1.1.1.1"}, "gateway": "10.0.4.1",
+			"interfaces": []any{map[string]any{"id": "ovs_eth0", "mac": "90-09-D0-62-EE-35"}}})
+	case "SYNO.Core.ExternalDevice.UPS":
+		ok(w, map[string]any{"enable": true, "charge": 99, "model": "Back-UPS XS 1500M", "mode": "USB"})
+	case "SYNO.Core.System.Process":
+		ok(w, map[string]any{"process": []any{map[string]any{"command": "sscamerad", "cpu": 47, "mem": 71896, "pid": 14114}}})
+	case "SYNO.Core.Group":
+		ok(w, map[string]any{"groups": []any{map[string]any{"name": "administrators", "description": ""}}})
+	case "SYNO.Backup.Task":
+		ok(w, map[string]any{"task_list": []any{}, "total": 0})
 	default:
 		fail(w, 102) // no such API
 	}
