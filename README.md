@@ -15,8 +15,11 @@ dsmctl network                # interfaces, DNS, gateway
 dsmctl ups                    # UPS model, charge, load, runtime
 dsmctl processes              # running processes by CPU and memory (alias: top)
 dsmctl packages               # installed packages and versions
+dsmctl packages start <id> --yes      # start | stop an installed package
 dsmctl docker                 # containers and their state (alias: ps)
+dsmctl docker restart <name> --yes    # start | stop | restart a container
 dsmctl tasks                  # scheduled tasks
+dsmctl tasks run <id> --yes           # run a scheduled task now
 dsmctl backup                 # Hyper Backup tasks
 dsmctl shares                 # shared folders
 dsmctl users                  # local users
@@ -78,7 +81,7 @@ Any client that speaks stdio MCP (Cursor, Claude Desktop, Zed) works the same: c
 
 ## Coverage
 
-Status, health, storage and SMART, DSM update check, Security Advisor, network, UPS, processes, packages, Docker containers, scheduled and Hyper Backup tasks, shares, users, groups, active connections, and full API discovery (`dsmctl apis`). Reboot and shutdown too. Anything else is `dsmctl raw <api> <method> --version N -p key=value`.
+Status, health, storage and SMART, DSM update check, Security Advisor, network, UPS, processes, packages, Docker containers, scheduled and Hyper Backup tasks, shares, users, groups, active connections, and full API discovery (`dsmctl apis`). Reboot and shutdown too. Write actions (`docker start|stop|restart`, `tasks run`, `packages start|stop`, `reboot`, `shutdown`) are confirmation-gated (`--yes`) and CLI-only, kept out of the MCP surface. Anything else is `dsmctl raw <api> <method> --version N -p key=value`.
 
 ## Development
 

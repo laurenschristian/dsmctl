@@ -75,11 +75,30 @@ func (s *Server) entry(w http.ResponseWriter, r *http.Request) {
 			"disks": []any{map[string]any{"id": "sata1", "name": "Drive 1", "model": "WD40", "status": "normal",
 				"smart_status": "normal", "temp": 34, "size_total": "4000787030016"}},
 		})
+	case "SYNO.Core.Package.Control":
+		if r.FormValue("id") == "" {
+			fail(w, 120)
+			return
+		}
+		ok(w, map[string]any{})
 	case "SYNO.Core.Package":
 		ok(w, map[string]any{"packages": []any{map[string]any{"id": "Docker", "name": "Container Manager", "version": "24.0"}}})
 	case "SYNO.Docker.Container":
-		ok(w, map[string]any{"containers": []any{map[string]any{"name": "adguard", "image": "adguard/adguardhome", "status": "running"}}})
+		switch method {
+		case "start", "stop", "restart":
+			if r.FormValue("name") == "" {
+				fail(w, 114)
+				return
+			}
+			ok(w, map[string]any{})
+		default:
+			ok(w, map[string]any{"containers": []any{map[string]any{"name": "adguard", "image": "adguard/adguardhome", "status": "running"}}})
+		}
 	case "SYNO.Core.TaskScheduler":
+		if method == "run" {
+			ok(w, map[string]any{})
+			return
+		}
 		ok(w, map[string]any{"tasks": []any{map[string]any{"id": 1, "name": "Backup", "enable": true}}})
 	case "SYNO.Core.Share":
 		ok(w, map[string]any{"shares": []any{map[string]any{"name": "docker", "vol_path": "/volume1"}}})

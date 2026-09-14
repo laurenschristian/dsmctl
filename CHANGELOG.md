@@ -5,6 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2]
+
+### Added
+- Confirmation-gated write actions: `docker start|stop|restart <name>`, `tasks run <id>`, `packages start|stop <id>` (all require `--yes`). CLI-only, not exposed as MCP tools.
+
 ## [0.1.1]
 
 ### Fixed

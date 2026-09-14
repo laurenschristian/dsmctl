@@ -360,3 +360,56 @@ func TestHumanBytes(t *testing.T) {
 		t.Fatal("pct")
 	}
 }
+
+func TestDockerActions(t *testing.T) {
+	fakeEnv(t)
+	// gated: no --yes with no tty input aborts
+	if _, err := run(t, "docker", "restart", "adguard"); err == nil {
+		t.Fatal("restart without --yes should abort")
+	}
+	for _, action := range []string{"start", "stop", "restart"} {
+		out, err := run(t, "docker", action, "adguard", "--yes")
+		if err != nil || !strings.Contains(out, action) {
+			t.Fatalf("docker %s: %v\n%s", action, err, out)
+		}
+	}
+}
+
+func TestTaskRun(t *testing.T) {
+	fakeEnv(t)
+	if _, err := run(t, "tasks", "run", "12"); err == nil {
+		t.Fatal("task run without --yes should abort")
+	}
+	out, err := run(t, "tasks", "run", "12", "--yes")
+	if err != nil || !strings.Contains(out, "started") {
+		t.Fatalf("task run: %v\n%s", err, out)
+	}
+}
+
+func TestPackageActions(t *testing.T) {
+	fakeEnv(t)
+	for _, action := range []string{"start", "stop"} {
+		out, err := run(t, "packages", action, "Docker", "--yes")
+		if err != nil || !strings.Contains(out, action) {
+			t.Fatalf("package %s: %v\n%s", action, err, out)
+		}
+	}
+}
+
+func TestDockerActionMethods(t *testing.T) {
+	srv := dsmtest.New("me", "pw")
+	t.Cleanup(srv.Close)
+	c := dsm.New(srv.URL)
+	if _, err := c.Login(context.Background(), "me", "pw", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.DockerAction(context.Background(), "restart", "x"); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.RunTask(context.Background(), "1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.PackageAction(context.Background(), "start", "Docker"); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -240,26 +240,107 @@ func rawListCmd(use, short string, fn func(cmd *cobra.Command) (any, error)) *co
 type rawResult struct{ data []byte }
 
 func packagesCmd() *cobra.Command {
-	return rawListCmd("packages", "Installed packages", func(cmd *cobra.Command) (any, error) {
+	c := rawListCmd("packages", "Installed packages (subcommands: start|stop <id>)", func(cmd *cobra.Command) (any, error) {
 		b, err := client.Packages(cmd.Context())
 		return rawResult{b}, err
 	})
+	for _, action := range []string{"start", "stop"} {
+		c.AddCommand(packageActionCmd(action))
+	}
+	return c
+}
+
+func packageActionCmd(action string) *cobra.Command {
+	var yes bool
+	cmd := &cobra.Command{
+		Use:   action + " <id>",
+		Short: action + " an installed package by id (id from `dsmctl packages`)",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			id := args[0]
+			if !confirm(yes, fmt.Sprintf("%s package %q?", action, id)) {
+				return fmt.Errorf("aborted (pass --yes to confirm)")
+			}
+			if err := authed(cmd.Context(), func() error {
+				return client.PackageAction(cmd.Context(), action, id)
+			}); err != nil {
+				return err
+			}
+			fmt.Printf("%s: %s\n", id, action)
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&yes, "yes", false, "skip confirmation")
+	return cmd
 }
 
 func dockerCmd() *cobra.Command {
-	c := rawListCmd("docker", "Docker containers", func(cmd *cobra.Command) (any, error) {
+	c := rawListCmd("docker", "Docker containers (subcommands: start|stop|restart)", func(cmd *cobra.Command) (any, error) {
 		b, err := client.DockerContainers(cmd.Context())
 		return rawResult{b}, err
 	})
 	c.Aliases = []string{"containers", "ps"}
+	for _, action := range []string{"start", "stop", "restart"} {
+		c.AddCommand(dockerActionCmd(action))
+	}
 	return c
 }
 
+func dockerActionCmd(action string) *cobra.Command {
+	var yes bool
+	cmd := &cobra.Command{
+		Use:   action + " <container>",
+		Short: action + " a Docker container by name",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			name := args[0]
+			if !confirm(yes, fmt.Sprintf("%s container %q?", action, name)) {
+				return fmt.Errorf("aborted (pass --yes to confirm)")
+			}
+			if err := authed(cmd.Context(), func() error {
+				return client.DockerAction(cmd.Context(), action, name)
+			}); err != nil {
+				return err
+			}
+			fmt.Printf("%s: %s\n", name, action)
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&yes, "yes", false, "skip confirmation")
+	return cmd
+}
+
 func tasksCmd() *cobra.Command {
-	return rawListCmd("tasks", "Scheduled tasks", func(cmd *cobra.Command) (any, error) {
+	c := rawListCmd("tasks", "Scheduled tasks (subcommand: run <id>)", func(cmd *cobra.Command) (any, error) {
 		b, err := client.Tasks(cmd.Context())
 		return rawResult{b}, err
 	})
+	c.AddCommand(taskRunCmd())
+	return c
+}
+
+func taskRunCmd() *cobra.Command {
+	var yes bool
+	cmd := &cobra.Command{
+		Use:   "run <id>",
+		Short: "Run a scheduled task now (id from `dsmctl tasks`)",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			id := args[0]
+			if !confirm(yes, fmt.Sprintf("run task %s now?", id)) {
+				return fmt.Errorf("aborted (pass --yes to confirm)")
+			}
+			if err := authed(cmd.Context(), func() error {
+				return client.RunTask(cmd.Context(), id)
+			}); err != nil {
+				return err
+			}
+			fmt.Printf("task %s: started\n", id)
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&yes, "yes", false, "skip confirmation")
+	return cmd
 }
 
 func sharesCmd() *cobra.Command {
