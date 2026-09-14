@@ -5,5 +5,11 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0]
+
 ### Added
-- Project scaffold: config, a `doctor` command, and an MCP server (`dsm_ping`).
+- DSM 7 client with token login, cached session, 2-factor support (`--otp`, positional, or interactive prompt), and auto re-login on expiry.
+- Read commands: `status`, `health` (human-readable sizes and percentages), `storage` (disk SMART), `update`, `security`, `network`, `ups`, `processes`/`top`, `packages`, `docker`/`ps`, `tasks`, `backup`, `shares`, `users`, `groups`, `connections`/`who`, `apis`.
+- Control: `reboot` and `shutdown` (confirmation-gated), `raw` for any `SYNO.*` API.
+- MCP server (`dsmctl mcp`) exposing 18 read tools plus `dsm_raw`.
+- `init`, `doctor`, shell completions, man pages, and per-command markdown docs.
