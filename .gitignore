@@ -1,0 +1,6 @@
+/dsmctl
+/dist/
+/coverage.out
+/man/
+/docs/cli/
+/completions/

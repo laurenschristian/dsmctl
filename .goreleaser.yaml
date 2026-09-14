@@ -1,0 +1,52 @@
+version: 2
+project_name: dsmctl
+before:
+  hooks:
+    - go mod tidy
+    - go run ./tools/gendocs
+    - sh scripts/completions.sh
+builds:
+  - env: [CGO_ENABLED=0]
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    ldflags: ["-s -w -X main.version={{.Version}}"]
+universal_binaries:
+  - replace: true
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+      - man/*
+      - completions/*
+checksum:
+  name_template: checksums.txt
+changelog:
+  use: github
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.*$'
+      order: 0
+    - title: Fixes
+      regexp: '^.*?fix(\(.+\))??!?:.*$'
+      order: 1
+    - title: Others
+      order: 999
+homebrew_casks:
+  - name: dsmctl
+    repository:
+      owner: laurenschristian
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    homepage: "https://github.com/laurenschristian/dsmctl"
+    description: "CLI and MCP server for eero mesh networks"
+    license: "MIT"
+    manpages:
+      - "man/dsmctl.1"
+    completions:
+      bash: "completions/dsmctl.bash"
+      zsh: "completions/_dsmctl"
+      fish: "completions/dsmctl.fish"
