@@ -305,13 +305,9 @@ func firstNonEmpty(vals ...string) string {
 
 func uptime(s *dsm.SystemInfo) string {
 	if s.Uptime != "" {
-		return s.Uptime
+		return s.Uptime // DSM returns "H:M:S", e.g. 5253:31:53
 	}
-	sec := s.UptimeSeconds
-	d := sec / 86400
-	h := (sec % 86400) / 3600
-	m := (sec % 3600) / 60
-	return fmt.Sprintf("%dd %dh %dm", d, h, m)
+	return "unknown"
 }
 
 func sessionExpired(e *dsm.APIError) bool { return e.SessionExpired() }

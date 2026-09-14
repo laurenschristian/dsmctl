@@ -14,8 +14,7 @@ type SystemInfo struct {
 	FirmwareVer    string `json:"firmware_ver"`
 	Version        string `json:"version_string"`
 	RAMSize        int    `json:"ram_size"`
-	UptimeSeconds  int64  `json:"up_time_second"`
-	Uptime         string `json:"uptime"`
+	Uptime         string `json:"up_time"`
 	Temperature    int    `json:"sys_temp"`
 	TempWarn       bool   `json:"temperature_warning"`
 	CPUSeries      string `json:"cpu_series"`
@@ -100,7 +99,7 @@ func (c *Client) Storage(ctx context.Context) (*StorageInfo, error) {
 
 func (c *Client) Packages(ctx context.Context) (json.RawMessage, error) {
 	p := url.Values{}
-	p.Set("additional", `["status","version"]`)
+	p.Set("additional", `["status"]`)
 	return c.Raw(ctx, "SYNO.Core.Package", "list", 2, p)
 }
 

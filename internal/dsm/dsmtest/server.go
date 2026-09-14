@@ -117,7 +117,7 @@ func (s *Server) system(w http.ResponseWriter, method string) {
 	case "info":
 		ok(w, map[string]any{
 			"model": "DS1821+", "serial": "SN123", "version_string": "DSM 7.2.1-69057",
-			"firmware_ver": "7.2.1", "ram_size": 16384, "up_time_second": 123456,
+			"firmware_ver": "7.2.1", "ram_size": 16384, "up_time": "34:17:36",
 			"cpu_series": "AMD Ryzen V1500B", "cpu_cores": "4", "sys_temp": 41, "temperature_warning": false,
 		})
 	case "reboot", "shutdown":

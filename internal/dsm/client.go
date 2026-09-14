@@ -95,9 +95,6 @@ func (c *Client) call(ctx context.Context, api, method string, version int, para
 	if c.SID != "" {
 		params.Set("_sid", c.SID)
 	}
-	if c.SynoToken != "" {
-		params.Set("SynoToken", c.SynoToken)
-	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/webapi/entry.cgi", strings.NewReader(params.Encode()))
 	if err != nil {
@@ -105,6 +102,11 @@ func (c *Client) call(ctx context.Context, api, method string, version int, para
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
+	// DSM binds an enable_syno_token session to this CSRF header; a request
+	// without it is rejected as "session id not found" (119), reads included.
+	if c.SynoToken != "" {
+		req.Header.Set("X-SYNO-TOKEN", c.SynoToken)
+	}
 
 	resp, err := c.HTTP.Do(req)
 	if err != nil {

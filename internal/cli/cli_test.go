@@ -275,3 +275,21 @@ func TestNotLoggedInWithoutCreds(t *testing.T) {
 		t.Fatalf("want not-logged-in, got %v", err)
 	}
 }
+
+func TestHelpers(t *testing.T) {
+	if firstNonEmpty("", "b", "c") != "b" {
+		t.Fatal("firstNonEmpty")
+	}
+	if firstNonEmpty("", "") != "" {
+		t.Fatal("firstNonEmpty empty")
+	}
+	if uptime(&dsm.SystemInfo{Uptime: "10:00:00"}) != "10:00:00" {
+		t.Fatal("uptime passthrough")
+	}
+	if uptime(&dsm.SystemInfo{}) != "unknown" {
+		t.Fatal("uptime fallback")
+	}
+	if !confirm(true, "x") {
+		t.Fatal("confirm --yes")
+	}
+}
