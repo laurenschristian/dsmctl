@@ -50,11 +50,9 @@ homebrew_casks:
       bash: "completions/dsmctl.bash"
       zsh: "completions/_dsmctl"
       fish: "completions/dsmctl.fish"
-    hooks:
-      post:
-        # Strip the quarantine xattr so the unsigned binary runs without a
-        # Gatekeeper prompt (goreleaser no longer emits this by default).
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/dsmctl"]
-          end
+    custom_block: |
+      postflight_steps do
+        on_macos do
+          run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ "{{staged_path}}" }}/dsmctl"]
+        end
+      end
